@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>내 결혼 상대 결정하기💍</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, "Malgun Gothic", sans-serif;
+      color: #333;
+    }
+
+    /* 화면을 왼쪽 검색 영역과 오른쪽 지도로 분리 */
+    .container {
+      display: flex;
+      width: 100%;
+      height: 100vh;
+    }
+
+    /* 왼쪽 검색 영역 */
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      width: 390px;
+      min-width: 330px;
+      padding: 24px;
+      background: #fffafd;
+      border-right: 1px solid #f0dfe7;
+      z-index: 1;
+    }
+
+    /* 사이트 제목 */
+    .logo {
+      margin: 0 0 8px;
+      font-size: 23px;
+      line-height: 1.4;
+      color: #bd6487;
+    }
+
+    .description {
+      margin: 0 0 20px;
+      color: #777;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    /* 업체 유형 탭 */
+    .tab-container {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .tab-button {
+      flex: 1;
+      padding: 12px 5px;
+      border: 1px solid #e7ccd8;
+      border-radius: 9px;
+      background: #fff;
+      color: #85586b;
+      font-size: 13px;
+      cursor: pointer;
+    }
+
+    .tab-button.active {
+      border-color: #c96d93;
+      background: #c96d93;
+      color: white;
+      font-weight: bold;
+    }
+
+    /* 지역 검색창 */
+    .search-form {
+      display: flex;
+      gap: 7px;
+    }
+
+    #searchInput {
+      flex: 1;
+      width: 0;
+      min-width: 0;
+      padding: 12px;
+      border: 1px solid #e2d6dc;
+      border-radius: 8px;
+      outline: none;
+      font-size: 13px;
+    }
+
+    #searchInput:focus {
+      border-color: #c96d93;
+    }
+
+    #searchButton {
+      padding: 0 15px;
+      border: none;
+      border-radius: 8px;
+      background: #c96d93;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    #searchButton:hover {
+      background: #ad5278;
+    }
+
+    #searchButton:disabled {
+      opacity: 0.6;
+      cursor: wait;
+    }
+
+    /* 현재 위치 버튼 */
+    #locationButton {
+      margin-top: 9px;
+      padding: 10px;
+      border: 1px solid #e7ccd8;
+      border-radius: 8px;
+      background: white;
+      color: #85586b;
+      cursor: pointer;
+    }
+
+    /* 검색 결과 안내 */
+    #status {
+      margin: 16px 0 8px;
+      color: #777;
+      font-size: 12px;
+      line-height: 1.6;
+    }
+
+    /* 검색 결과 목록 */
+    #resultList {
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .place-item {
+      padding: 15px 8px;
+      border-bottom: 1px solid #f0e5ea;
+      cursor: pointer;
+    }
+
+    .place-item:hover {
+      background: #fff0f5;
+    }
+
+    .place-name {
+      margin-bottom: 7px;
+      font-size: 15px;
+      font-weight: bold;
+      color: #49353e;
+    }
+
+    .place-address {
+      margin-bottom: 6px;
+      color: #777;
+      font-size: 12px;
+      line-height: 1.6;
+    }
+
+    .place-category {
+      color: #bd6487;
+      font-size: 11px;
+      line-height: 1.5;
+    }
+
+    .place-phone {
+      margin-top: 6px;
+      color: #666;
+      font-size: 12px;
+    }
+
+    .place-link {
+      display: inline-block;
+      margin-top: 8px;
+      color: #bd6487;
+      font-size: 12px;
+      text-decoration: none;
+    }
+
+    /* 오른쪽 지도 */
+    #map {
+      flex: 1;
+      min-width: 0;
+      height: 100%;
+      background: #f4f4f4;
+    }
+
+    /* 작은 화면에서는 위아래로 배치 */
+    @media (max-width: 650px) {
+      .container {
+        flex-direction: column;
+      }
+
+      .sidebar {
+        width: 100%;
+        min-width: 0;
+        height: 52%;
+        padding: 14px;
+      }
+
+      .logo {
+        font-size: 20px;
+      }
+
+      #map {
+        width: 100%;
+        height: 48%;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+
+    <!-- 왼쪽 업체 검색 영역 -->
+    <aside class="sidebar">
+      <h1 class="logo">내 결혼 상대 결정하기💍</h1>
+
+      <p class="description">
+        나에게 맞는 결혼정보사를 찾아보세요.<br>
+        업체 유형을 선택하고 시·구·동 단위로 검색해 보세요.
+      </p>
+
+      <!-- 업체 유형 선택 -->
+      <div class="tab-container">
+        <button
+          type="button"
+          class="tab-button active"
+          data-type="general"
+          aria-pressed="true"
+        >
+          결혼정보회사
+        </button>
+
+        <button
+          type="button"
+          class="tab-button"
+          data-type="remarriage"
+          aria-pressed="false"
+        >
+          재혼 전문 업체
+        </button>
+      </div>
+
+      <!-- 지역 검색창 -->
+      <form class="search-form" id="searchForm">
+        <input
+          type="text"
+          id="searchInput"
+          placeholder="지역별로 알아보기 (예: 부산 해운대구)"
+          aria-label="검색할 지역"
+        >
+        <button type="submit" id="searchButton">검색</button>
+      </form>
+
+      <button type="button" id="locationButton">
+        📍 내 주변 업체 찾기
+      </button>
+
+      <p id="status" role="status" aria-live="polite">
+        지도를 불러오는 중입니다.
+      </p>
+
+      <ul id="resultList"></ul>
+    </aside>
+
+    <!-- 오른쪽 카카오 지도 -->
+    <main id="map" aria-label="결혼정보사 위치 지도"></main>
+
+  </div>
+
+  <!-- 카카오 지도 SDK -->
+  <script
+    src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=f38811e47209589c76ef3002c7c95204&libraries=services&autoload=false"
+  ></script>
+
+  <script>
+    // 지도와 검색에 필요한 변수
+    let map;
+    let placesService;
+    let geocoder;
+    let infoWindow;
+    let markers = [];
+    let currentPosition = null;
+    let currentLocationMarker = null;
+
+    // 기본 탭은 일반 결혼정보회사
+    let activeType = "general";
+    let searchRequestId = 0;
+
+    // HTML 요소
+    const searchForm = document.getElementById("searchForm");
+    const searchInput = document.getElementById("searchInput");
+    const searchButton = document.getElementById("searchButton");
+    const locationButton = document.getElementById("locationButton");
+    const resultList = document.getElementById("resultList");
+    const statusText = document.getElementById("status");
+    const tabButtons = document.querySelectorAll(".tab-button");
+
+    // 카카오 지도 SDK 오류 안내
+    function showSdkError() {
+      statusText.textContent =
+        "지도를 불러오지 못했습니다. API 키와 웹 플랫폼 도메인 설정을 확인해 주세요.";
+    }
+
+    // 지도 초기화
+    function initializeMap() {
+      if (!window.kakao || !window.kakao.maps) {
+        showSdkError();
+        return;
+      }
+
+      kakao.maps.load(function () {
+        const initialPosition = new kakao.maps.LatLng(
+          37.5665,
+          126.9780
+        );
+
+        // 지도 생성
+        map = new kakao.maps.Map(
+          document.getElementById("map"),
+          {
+            center: initialPosition,
+            level: 5
+          }
+        );
+
+        // 장소 검색 및 주소 변환 객체
+        placesService = new kakao.maps.services.Places();
+        geocoder = new kakao.maps.services.Geocoder();
+
+        infoWindow = new kakao.maps.InfoWindow({
+          zIndex: 10
+        });
+
+        // 검색창 제출
+        searchForm.addEventListener("submit", function (event) {
+          event.preventDefault();
+          searchPlaces();
+        });
+
+        // 현재 위치 버튼
+        locationButton.addEventListener("click", function () {
+          getCurrentLocation(function () {
+            searchPlaces();
+          });
+        });
+
+        // 탭 변경
+        tabButtons.forEach(function (button) {
+          button.addEventListener("click", function () {
+            activeType = button.dataset.type;
+
+            tabButtons.forEach(function (tab) {
+              const isActive = tab === button;
+
+              tab.classList.toggle("active", isActive);
+              tab.setAttribute(
+                "aria-pressed",
+                String(isActive)
+              );
+            });
+
+            // 이전 검색 결과를 지우고 선택한 유형만 검색
+            clearSearchResults();
+            searchPlaces();
+          });
+        });
+
+        // 페이지가 열리면 현재 위치 확인
+        getCurrentLocation(function () {
+          searchPlaces();
+        });
+      });
+    }
+
+    // 현재 위치 확인
+    function getCurrentLocation(onComplete) {
+      if (!navigator.geolocation) {
+        statusText.textContent =
+          "위치 기능을 사용할 수 없습니다. 지역을 입력해 검색해 주세요.";
+
+        if (onComplete) onComplete(false);
+        return;
+      }
+
+      statusText.textContent = "현재 위치를 확인하고 있습니다.";
+
+      navigator.geolocation.getCurrentPosition(
+        function (position) {
+          currentPosition = new kakao.maps.LatLng(
+            position.coords.latitude,
+            position.coords.longitude
+          );
+
+          map.setCenter(currentPosition);
+
+          // 이전 현재 위치 마커 제거
+          if (currentLocationMarker) {
+            currentLocationMarker.setMap(null);
+          }
+
+          // 현재 위치 마커 생성
+          currentLocationMarker = new kakao.maps.Marker({
+            map: map,
+            position: currentPosition
+          });
+
+          currentLocationMarker.setTitle("현재 위치");
+
+          statusText.textContent = "현재 위치를 확인했습니다.";
+
+          if (onComplete) onComplete(true);
+        },
+
+        function (error) {
+          if (error.code === error.PERMISSION_DENIED) {
+            statusText.textContent =
+              "위치 권한이 거부되었습니다. 지역을 입력해 검색해 주세요.";
+          } else {
+            statusText.textContent =
+              "현재 위치를 확인할 수 없습니다. 지역 검색은 가능합니다.";
+          }
+
+          if (onComplete) onComplete(false);
+        },
+
+        {
+          enableHighAccuracy: false,
+          timeout: 10000,
+          maximumAge: 60000
+        }
+      );
+    }
+
+    // 지도에 표시된 업체 마커 제거
+    function clearMarkers() {
+      markers.forEach(function (marker) {
+        marker.setMap(null);
+      });
+
+      markers = [];
+
+      if (infoWindow) {
+        infoWindow.close();
+      }
+    }
+
+    // 검색 결과 초기화
+    function clearSearchResults() {
+      // 진행 중인 이전 검색 결과는 무시
+      searchRequestId++;
+
+      clearMarkers();
+      resultList.replaceChildren();
+    }
+
+    // 탭에 따라 서로 다른 검색어 사용
+    function getSearchKeywords() {
+      if (activeType === "remarriage") {
+        // 재혼 탭에서는 재혼 관련 검색어만 사용
+        // 일반 결혼정보회사 검색어를 대신 사용하지 않음
+        return [
+          "재혼정보회사",
+          "재혼전문",
+          "재혼정보",
+          "재혼 전문 결혼정보회사"
+        ];
+      }
+
+      // 일반 결혼정보회사 탭
+      return [
+        "결혼정보회사",
+        "결혼정보업체",
+        "결혼정보사",
+        "결혼정보"
+      ];
+    }
+
+    // 지역명을 좌표로 변환
+    function findRegionPosition(region) {
+      return new Promise(function (resolve) {
+        geocoder.addressSearch(region, function (result, status) {
+          if (
+            status === kakao.maps.services.Status.OK &&
+            result &&
+            result.length > 0
+          ) {
+            resolve(
+              new kakao.maps.LatLng(
+                result[0].y,
+                result[0].x
+              )
+            );
+          } else {
+            resolve(null);
+          }
+        });
+      });
+    }
+
+    // 카카오 장소 검색
+    function requestPlaces(keyword, options) {
+      return new Promise(function (resolve) {
+        placesService.keywordSearch(
+          keyword,
+          function (data, status) {
+            if (status === kakao.maps.services.Status.OK) {
+              resolve({
+                places: data || [],
+                hadError: false
+              });
+            } else if (
+              status === kakao.maps.services.Status.ZERO_RESULT
+            ) {
+              resolve({
+                places: [],
+                hadError: false
+              });
+            } else {
+              resolve({
+                places: [],
+                hadError: true
+              });
+            }
+          },
+          options || {}
+        );
+      });
+    }
+
+    // 여러 검색 결과를 중복 없이 합치기
+    function mergeUniquePlaces(results) {
+      const uniquePlaces = new Map();
+
+      results.forEach(function (place) {
+        const key = place.id ||
+          place.place_url ||
+          (
+            place.place_name + "|" +
+            (place.road_address_name || place.address_name)
+          );
+
+        if (!uniquePlaces.has(key)) {
+          uniquePlaces.set(key, place);
+        }
+      });
+
+      return Array.from(uniquePlaces.values()).slice(0, 75);
+    }
+
+    // 업체 검색
+    async function searchPlaces() {
+      if (!placesService) return;
+
+      const region = searchInput.value.trim();
+
+      // 새 검색 요청 번호
+      searchRequestId++;
+      const requestId = searchRequestId;
+
+      clearMarkers();
+      resultList.replaceChildren();
+
+      searchButton.disabled = true;
+
+      statusText.textContent = region
+        ? region + " 지역의 업체를 검색하고 있습니다..."
+        : "주변 업체를 검색하고 있습니다...";
+
+      const searchKeywords = getSearchKeywords();
+      const tasks = [];
+      let anyError = false;
+
+      try {
+        if (region) {
+          // 지역명을 좌표로 변환
+          const regionPosition = await findRegionPosition(region);
+
+          if (requestId !== searchRequestId) return;
+
+          if (regionPosition) {
+            map.setCenter(regionPosition);
+
+            // 지역 좌표를 중심으로 검색어별 2페이지까지 검색
+            searchKeywords.forEach(function (keyword) {
+              [1, 2].forEach(function (pageNumber) {
+                tasks.push(
+                  requestPlaces(keyword, {
+                    location: regionPosition,
+                    radius: 20000,
+                    page: pageNumber,
+                    sort: kakao.maps.services.SortBy.ACCURACY
+                  })
+                );
+              });
+            });
+          }
+
+          // 지역명과 업체 검색어를 결합한 검색도 진행
+          searchKeywords.forEach(function (keyword) {
+            tasks.push(
+              requestPlaces(region + " " + keyword, {
+                page: 1
+              })
+            );
+          });
+
+        } else {
+          // 지역을 입력하지 않았다면 현재 위치 중심으로 검색
+          const searchCenter = currentPosition || map.getCenter();
+
+          searchKeywords.forEach(function (keyword) {
+            [1, 2, 3].forEach(function (pageNumber) {
+              tasks.push(
+                requestPlaces(keyword, {
+                  location: searchCenter,
+                  radius: 20000,
+                  page: pageNumber,
+                  sort: kakao.maps.services.SortBy.DISTANCE
+                })
+              );
+            });
+          });
+        }
+
+        // 모든 검색 요청이 끝날 때까지 기다림
+        const responses = await Promise.all(tasks);
+
+        if (requestId !== searchRequestId) return;
+
+        let allPlaces = [];
+
+        responses.forEach(function (response) {
+          allPlaces = allPlaces.concat(response.places);
+
+          if (response.hadError) {
+            anyError = true;
+          }
+        });
+
+        const uniquePlaces = mergeUniquePlaces(allPlaces);
+
+        searchButton.disabled = false;
+
+        if (uniquePlaces.length > 0) {
+          displayResults(uniquePlaces);
+
+          statusText.textContent =
+            (region ? region + " 지역의 " : "주변 ") +
+            "검색 결과 " + uniquePlaces.length + "개를 표시합니다." +
+            (
+              activeType === "remarriage"
+                ? " 재혼 전문 서비스 여부는 업체에 확인해 주세요."
+                : ""
+            );
+
+        } else if (anyError) {
+          statusText.textContent =
+            "검색 요청에 실패했습니다. API 키, 웹 도메인 설정과 인터넷 연결을 확인해 주세요.";
+
+        } else if (activeType === "remarriage") {
+          // 재혼 검색 결과가 없더라도 일반 업체 결과를 대신 표시하지 않음
+          statusText.textContent =
+            "재혼 관련 검색 결과가 없습니다. 지역을 바꾸거나 다른 재혼 관련 검색어를 시도해 보세요. 일반 결혼정보회사 결과는 대신 표시하지 않습니다.";
+
+        } else {
+          statusText.textContent =
+            "검색 결과가 없습니다. 시·구·동 단위의 구체적인 지역명을 입력해 보세요.";
+        }
+
+      } catch (error) {
+        if (requestId !== searchRequestId) return;
+
+        searchButton.disabled = false;
+
+        statusText.textContent =
+          "검색 중 오류가 발생했습니다. 인터넷 연결과 카카오 API 설정을 확인해 주세요.";
+
+        console.error("검색 오류:", error);
+      }
+    }
+
+    // 검색 결과를 지도와 목록에 표시
+    function displayResults(places) {
+      const bounds = new kakao.maps.LatLngBounds();
+
+      places.forEach(function (place, index) {
+        const position = new kakao.maps.LatLng(
+          Number(place.y),
+          Number(place.x)
+        );
+
+        bounds.extend(position);
+
+        // 지도 마커 생성
+        const marker = new kakao.maps.Marker({
+          map: map,
+          position: position
+        });
+
+        marker.setTitle(place.place_name);
+        markers.push(marker);
+
+        // 마커 클릭 시 상세 정보 표시
+        kakao.maps.event.addListener(
+          marker,
+          "click",
+          function () {
+            showPlaceInfo(place, marker);
+          }
+        );
+
+        // 업체 목록 항목 생성
+        const listItem = document.createElement("li");
+        listItem.className = "place-item";
+
+        const name = document.createElement("div");
+        name.className = "place-name";
+        name.textContent =
+          (index + 1) + ". " + place.place_name;
+
+        const address = document.createElement("div");
+        address.className = "place-address";
+        address.textContent =
+          place.road_address_name ||
+          place.address_name ||
+          "주소 정보 없음";
+
+        const category = document.createElement("div");
+        category.className = "place-category";
+        category.textContent =
+          place.category_name || "업종 정보 없음";
+
+        listItem.append(name, address, category);
+
+        // 전화번호가 있는 경우 표시
+        if (place.phone) {
+          const phone = document.createElement("div");
+          phone.className = "
